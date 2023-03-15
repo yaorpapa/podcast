@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title></title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta charset="UTF-8">
+    <style>
+        .channel {
+            border-bottom: 1px solid #999;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+    </style>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+
+<body>
+
+  
+    <div class="container">
+        <div class="card-deck mb-3 text-center">
+          <div class="card mb-4 box-shadow">
+            <div class="card-header">
+                <!-- <audio id="myAudio" class="p-2" controls>
+                    <source src="#" type="audio/mpeg">
+                </audio> -->
+                <audio id="myAudio" class="p-2" controls="" src="#" autoplay="">
+                </audio>
+                <hr class="w50">
+                <div class="row">
+                    <div class="col-4 col-sm-2">最新音檔</div>
+                    <div class="col-4 col-sm-2">更新時間</div>
+                    <div class="col-4 col-sm-2">節目名稱</div>
+                    <div class="col-12 col-sm-6">最新集數與連結</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="podcasts">
+                    <!-- 最新一集資訊會透過 JavaScript 動態產生 -->
+                <div class="channel row"><div class="col-4 col-sm-2"><button type="button" class="btn btn-dark" onclick="document.getElementById('myAudio').src='https://chtbl.com/track/E8D1ED/https://backend.endpoints.firstory-709db.cloud.goog/play.mp3?url=https%3A%2F%2Fd3mww1g1pfq2pt.cloudfront.net%2FRecord%2Fcl39lz2ky01co01ugaba7gr9y%2Fclf3jxpz1000a01w44h87cxiu.mp3%3Fv%3D1678514116487'">立刻收聽</button></div><div class="col-4 col-sm-2 time">2023/03/11</div><div class="col-4 col-sm-2">下一本讀什麼？</div><div class="col-12 col-sm-6"><a href="https://open.firstory.me/story/clf3jxpz1000901w4465l0gtc" target="_blank">EP.247 《讓別人贏》讀後心得：翻轉人生觀念的共贏思維</a></div></div><div class="channel row"><div class="col-4 col-sm-2"><button type="button" class="btn btn-dark" onclick="document.getElementById('myAudio').src='https://sw.soundon.fm/p/OW9L8H/chrt.fm/track/C661A8/https://backend.endpoints.firstory-709db.cloud.goog/play.mp3?url=https%3A%2F%2Fd3mww1g1pfq2pt.cloudfront.net%2FRecord%2Fcl3kgl5yy037s01ui62u3eyqb%2Fclf1a8ruj02gx01vwhae8bt2w.mp3%3Fv%3D1678376927271'">立刻收聽</button></div><div class="col-4 col-sm-2 time">2023/03/10</div><div class="col-4 col-sm-2">1零異攻隊</div><div class="col-12 col-sm-6"><a href="https://open.firstory.me/story/clf1a8ruj02gw01vw1xip40pr" target="_blank">EP51 關於我和家人變成鬼</a></div></div><div class="channel row"><div class="col-4 col-sm-2"><button type="button" class="btn btn-dark" onclick="document.getElementById('myAudio').src='https://backend.endpoints.firstory-709db.cloud.goog/play.mp3?url=https%3A%2F%2Fd3mww1g1pfq2pt.cloudfront.net%2FRecord%2Fckj7zhqmectd00984anxpaypq%2Fclf0snq2o023401vw2xf3do7j.mp3%3Fv%3D1678347510067'">立刻收聽</button></div><div class="col-4 col-sm-2 time">2023/03/09</div><div class="col-4 col-sm-2">下班看電影</div><div class="col-12 col-sm-6"><a href="https://open.firstory.me/story/clf0snq2o023301vwbrmb1jdc" target="_blank">EP122【鈴芽之旅】新海誠的電影怎麼可能會難看？喜歡的不要點</a></div></div><div class="channel row"><div class="col-4 col-sm-2"><button type="button" class="btn btn-dark" onclick="document.getElementById('myAudio').src='https://chrt.fm/track/9B3AFG/track.fstry.me/p/tzhfr8vr/rss.soundon.fm/rssf/05bcfdaf-0b94-4bf3-889c-cdc5b142492a/feedurl/65013ec8-2690-467b-8d25-b62d113eebbd/rssFileVip.mp3?timestamp=1678252039866'">立刻收聽</button></div><div class="col-4 col-sm-2 time">2023/03/07</div><div class="col-4 col-sm-2">也讓AI有點小執著</div><div class="col-12 col-sm-6"><a href="https://player.soundon.fm/p/05bcfdaf-0b94-4bf3-889c-cdc5b142492a/episodes/65013ec8-2690-467b-8d25-b62d113eebbd" target="_blank">EP49【小執著と鉄路散歩④龍港站】-沿著海線鐵路來一趟靜心朝聖之路</a></div></div><div class="channel row"><div class="col-4 col-sm-2"><button type="button" class="btn btn-dark" onclick="document.getElementById('myAudio').src='https://chtbl.com/track/15AF2C/track.fstry.me/p/rw34nguc/rss.soundon.fm/rssf/e01e9e8a-7771-4e35-a655-9b52fdbfc084/feedurl/a8febe57-e63b-4208-ba46-0468fac8532f/rssFileVip.mp3?timestamp=1678309508577'">立刻收聽</button></div><div class="col-4 col-sm-2 time">2023/02/05</div><div class="col-4 col-sm-2">一歷百憂解</div><div class="col-12 col-sm-6"><a href="https://player.soundon.fm/p/e01e9e8a-7771-4e35-a655-9b52fdbfc084/episodes/a8febe57-e63b-4208-ba46-0468fac8532f" target="_blank">魏晉南北朝 中華衰亡與投降者（5）背骨仔的勝利 帥哥嵇康與竹林七賢 一段血色的壓抑BL故事-鍾會 司馬昭白忙的一生</a></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"
+        integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+        integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
