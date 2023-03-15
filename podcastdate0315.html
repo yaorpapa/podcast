@@ -65,7 +65,7 @@
 
                     // 動態新增表格列
                     const row = $('<div>').addClass('channel row');
-                    const playButton = $('<div>').addClass('col-4 col-sm-2').html($('<button>').text('立刻收聽').attr('type', 'button').addClass('btn btn-dark').attr('onclick', "document.getElementById('myAudio').src='" + enclosureUrl + "'").click(function () {
+                    const playButton = $('<div>').addClass('col-4 col-sm-2').html($('<button>').text('播放').attr('type', 'button').addClass('btn btn-secondary').attr('onclick', "document.getElementById('myAudio').src='" + enclosureUrl + "'").click(function () {
     $('#myAudio').attr('src', enclosureUrl);
     document.getElementById('myAudio').autoplay = true;
 }));
