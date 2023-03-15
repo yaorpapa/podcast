@@ -2,205 +2,199 @@
 <html>
 
 <head>
-  <title>Podcast創作者社群 最新一集資訊</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <meta charset="UTF-8">
-  <style>
-    table,
-    th,
-    td {
-      border: 1px solid black;
-      border-collapse: collapse;
-      padding: 5px;
-      text-align: center;
-    }
+    <title>Podcast創作者社群 最新一集資訊</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta charset="UTF-8">
+    <style>
+        .channel {
+            border-bottom: 1px solid #999;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+    </style>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+        integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const sheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/1YBfhdK3z9L3ROTiNN9jSkBDUqCXSmTcIfAdLYTgOWXs/values/Sheet1?key=AIzaSyAHvlsMvqUME7gsW6AdFQZ5BWTngkHXKt4&range=Sheet1';
+            const corsAnywhereUrl = 'https://cors-anywhere.herokuapp.com/';
+            const rssRegex = /https?:\/\/[\w\d-]+(\.[\w\d-]+)*\.?(:\d+)?(\/[\w\d-]*)*(\/[\w\d-]+\.[\w\d-]+)?(\?([\w\d-]+(=[\w\d-]+)?&?)*)?(#[\w\d-]+)?/;
 
-    code th {
-      background-color: #ddd;
-    }
-  </style>
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
-    integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-    $(document).ready(function () {
-      const sheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/1YBfhdK3z9L3ROTiNN9jSkBDUqCXSmTcIfAdLYTgOWXs/values/Sheet1?key=AIzaSyAHvlsMvqUME7gsW6AdFQZ5BWTngkHXKt4&range=Sheet1';
-      const corsAnywhereUrl = 'https://cors-anywhere.herokuapp.com/';
-      const rssRegex = /https?:\/\/[\w\d-]+(\.[\w\d-]+)*\.?(:\d+)?(\/[\w\d-]*)*(\/[\w\d-]+\.[\w\d-]+)?(\?([\w\d-]+(=[\w\d-]+)?&?)*)?(#[\w\d-]+)?/;
-
-      async function getLatestEpisodes() {
-        try {
-          const response = await fetch(corsAnywhereUrl + sheetUrl);
-          const data = await response.json();
-          const entries = data.values;
-          for (const entry of entries) {
-            const rss = entry[1];
-            if (rssRegex.test(rss)) {
-              await getLatestEpisode(rss);
+            async function getLatestEpisodes() {
+                try {
+                    const response = await fetch(corsAnywhereUrl + sheetUrl);
+                    const data = await response.json();
+                    const entries = data.values;
+                    for (const entry of entries) {
+                        const rss = entry[1];
+                        if (rssRegex.test(rss)) {
+                            await getLatestEpisode(rss);
+                        }
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
             }
-          }
-        } catch (error) {
-          console.error(error);
-        }
-      }
 
-      async function getLatestEpisode(rss) {
-        try {
-          const response = await fetch(corsAnywhereUrl + rss);
-          const data = await response.text();
+            async function getLatestEpisode(rss) {
+                try {
+                    const response = await fetch(corsAnywhereUrl + rss);
+                    const data = await response.text();
 
-          const parser = new DOMParser();
-          const xml = parser.parseFromString(data, 'text/xml');
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(data, 'text/xml');
 
-          const channel = xml.querySelector('channel');
+                    const channel = xml.querySelector('channel');
 
-          // 取得節目名稱
-          const podcastTitle = channel.querySelector('title').textContent;
+                    // 取得節目名稱
+                    const podcastTitle = channel.querySelector('title').textContent;
 
-          // 取得最新一集的標題、連結和更新時間
-          const item = channel.querySelector('item');
-          const episodeTitle = item.querySelector('title').textContent;
-          const episodeLink = item.querySelector('link').textContent;
-          const episodeDate = new Date(item.querySelector('pubDate').textContent);
+                    // 取得最新一集的標題、連結和更新時間
+                    const item = channel.querySelector('item');
+                    const episodeTitle = item.querySelector('title').textContent;
+                    const episodeLink = item.querySelector('link').textContent;
+                    const episodeDate = new Date(item.querySelector('pubDate').textContent);
 
-          // 取得最新一集的音訊檔案網址
-          const enclosureUrl = item.querySelector('enclosure').getAttribute('url');
+                    // 取得最新一集的音訊檔案網址
+                    const enclosureUrl = item.querySelector('enclosure').getAttribute('url');
 
-          // 動態新增表格列
-          const row = $('<tr>');
-          const podcastTitleCell = $('<td>').text(podcastTitle);
-          const episodeLinkCell = $('<td>').html($('<a>').attr('href', episodeLink).attr('target', '_blank').text(episodeTitle));
-          const episodeDateCell = $('<td>').addClass('time').text(episodeDate.toLocaleString());
-            const playButton = $('<button>').text('立刻收聽').attr('type', 'button').addClass('btn btn-dark').click(function () {
-            $('#myAudio').attr('src', enclosureUrl);
-            document.getElementById('myAudio').autoplay = true;
-          });
-
-          row.append(podcastTitleCell, episodeLinkCell, episodeDateCell, playButton);
-          $('#podcasts').append(row);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      getLatestEpisodes();
-    });
-  </script>
+                    // 動態新增表格列
+                    const row = $('<div>').addClass('channel row');
+                    const playButton = $('<div>').addClass('col-4 col-sm-2').html($('<button>').text('立刻收聽').attr('type', 'button').addClass('btn btn-dark').attr('onclick', "document.getElementById('myAudio').src='" + enclosureUrl + "'").click(function () {
+    $('#myAudio').attr('src', enclosureUrl);
+    document.getElementById('myAudio').autoplay = true;
+}));
 
 
-  <script>
-    $(document).ready(function () {
-      $("#sortButton").click(function () {
-        $(".time").each(function () {
-          $(this).text($(this).text().replace("上午", "").replace("下午", ""));
+
+                    const episodeDateCell = $('<div>').addClass('col-4 col-sm-2 time').text(episodeDate.toLocaleString());
+                    const podcastTitleCell = $('<div>').addClass('col-4 col-sm-2').text(podcastTitle);
+                    const episodeLinkCell = $('<div>').addClass('col-12 col-sm-6').html($('<a>').attr('href', episodeLink).attr('target', '_blank').text(episodeTitle));
+
+
+
+                    row.append(playButton, episodeDateCell, podcastTitleCell, episodeLinkCell);
+                    $('#podcasts').append(row);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            getLatestEpisodes();
         });
-      });
-    });
-
-    $(document).ready(function () {
-      // 當按鈕被按下時，執行以下函式
-      $('#sortButton').click(function () {
-        // 將每個時間格的內容取出來，並將其轉換為Date物件
-        $('.time').each(function () {
-          var dateStr = $(this).text();
-          var date = new Date(dateStr);
-
-          // 使用getFullYear, getMonth和getDate方法來取得年、月和日
-          var year = date.getFullYear();
-          var month = ('0' + (date.getMonth() + 1)).slice(-2);
-          var day = ('0' + date.getDate()).slice(-2);
-
-          // 將日期格式化為 "年-月-日" 的格式
-          var formattedDate = year + '/' + month + '/' + day;
-
-          // 將格式化後的日期設置回時間格的內容中
-          $(this).text(formattedDate);
-        });
-      });
-    });
-    $(document).ready(function () {
-      $('#sortButton').click(function () {
-        // 获取表格的tbody元素
-        var tbody = $('#podcasts');
-
-        // 获取tbody下的tr元素，转换成数组并排序
-        var rows = tbody.children('tr').get();
-        rows.sort(function (a, b) {
-          // 按<td class="time">這個表格的文字内容排序
-          var keyA = $(a).find('.time').text();
-          var keyB = $(b).find('.time').text();
-          return keyB.localeCompare(keyA);
+    </script>
+    <script>
+        $(document).ready(function () {
+            $("#sortButton").click(function () {
+                $(".time").each(function () {
+                    $(this).text($(this).text().replace("上午", "").replace("下午", ""));
+                });
+            });
         });
 
-        // 清空原有的tbody内容，并重新添加排好序的行
-        $.each(rows, function (index, row) {
-          tbody.append(row);
+        $(document).ready(function () {
+            // 當按鈕被按下時，執行以下函式
+            $('#sortButton').click(function () {
+                // 將每個時間格的內容取出來，並將其轉換為Date物件
+                $('.time').each(function () {
+                    var dateStr = $(this).text();
+                    var date = new Date(dateStr);
+
+                    // 使用getFullYear, getMonth和getDate方法來取得年、月和日
+                    var year = date.getFullYear();
+                    var month = ('0' + (date.getMonth() + 1)).slice(-2);
+                    var day = ('0' + date.getDate()).slice(-2);
+
+                    // 將日期格式化為 "年-月-日" 的格式
+                    var formattedDate = year + '/' + month + '/' + day;
+
+                    // 將格式化後的日期設置回時間格的內容中
+                    $(this).text(formattedDate);
+                });
+            });
         });
-      });
-    });
-  </script>
-  <script>
-    $(function () {
-      $("#copyhtml").click(function () {
-        var html = $(".copybody").html();
-        navigator.clipboard.writeText(html);
-        alert("已複製HTML程式碼到剪貼簿");
-      });
-    });
-  </script>
+
+        $(document).ready(function () {
+            $('#sortButton').click(function () {
+                // 获取表格的tbody元素
+                var tbody = $('#podcasts');
+
+                // 获取tbody下的channel元素，转换成数组并排序
+                var rows = tbody.children('.channel').get();
+                rows.sort(function (a, b) {
+                    // 按<div class="time">這個元素的文字内容排序
+                    var keyA = $(a).find('.time').text();
+                    var keyB = $(b).find('.time').text();
+                    return keyB.localeCompare(keyA);
+                });
+
+                // 清空原有的tbody内容，并重新添加排好序的行
+                $.each(rows, function (index, row) {
+                    tbody.append(row);
+                });
+            });
+        });
+    </script>
+    <script>
+        $(function () {
+            $("#copyhtml").click(function () {
+                var html = $(".coptHtml").html();
+                navigator.clipboard.writeText(html);
+                alert("已複製HTML程式碼到剪貼簿");
+            });
+        });
+    </script>
 </head>
 
 <body>
-  <table class="table">
-    <thead>
-      <tr>
-        <td colspan="5">
-          <button type="button" class="btn btn-dark"><a href="https://cors-anywhere.herokuapp.com/" target="_blank">跨域代理伺服器連結</a></button>
-          <button id="sortButton" type="button" class="btn btn-outline-primary">修改日期並根據最新時間排序</button>
-          <button id="copyhtml" type="button" class="btn btn-outline-secondary">複製HTML程式碼</button>
-        </td>
-      </tr>
-    </thead>
-  </table>
-  <div class="copybody">
-    <table class="table">
-      <thead>
-        <tr>
-          <td colspan="5">
-            <h3>Podcast創作者社群 創作者最新一集資訊</h3>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="5">
-            <audio id="myAudio" controls>
-              <source src="#" type="audio/mpeg">
-              Your browser does not support the audio element.
-            </audio>
-          </td>
-        </tr>
-        <tr>
-          <th scope="col">PODCAST節目名稱</th>
-          <th scope="col">最新集數與連結</th>
-          <th scope="col">更新時間</th>
-          <th scope="col">最新音檔</th>
-        </tr>
-      </thead>
-      <tbody id="podcasts">
-        <!-- 最新一集資訊會透過 JavaScript 動態產生 -->
-      </tbody>
+    <div class="col-12 text-center">
+        <h3>Podcast創作者社群 創作者最新一集資訊</h3> <br>
+        <a href="https://cors-anywhere.herokuapp.com/" target="_blank" type="button" class="btn btn-secondary">跨域代理伺服器連結</a>
+        <button id="sortButton" type="button" class="btn btn-outline-primary">修改日期並根據最新時間排序</button>
+        <button id="copyhtml" type="button" class="btn btn-outline-secondary">複製HTML程式碼</button><br>
 
-    </table>
-  </div>
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-    crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"
-    integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut"
-    crossorigin="anonymous"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
-    integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
-    crossorigin="anonymous"></script>
+    </div>
+<div class="coptHtml">
+    <div class="container">
+        <div class="card-deck mb-3 text-center">
+          <div class="card mb-4 box-shadow">
+            <div class="card-header">
+                <!-- <audio id="myAudio" class="p-2" controls>
+                    <source src="#" type="audio/mpeg">
+                </audio> -->
+                <audio id="myAudio" class="p-2" controls="" src="#" autoplay="">
+                </audio>
+                <hr class="w50">
+                <div class="row">
+                    <div class="col-4 col-sm-2">最新音檔</div>
+                    <div class="col-4 col-sm-2">更新時間</div>
+                    <div class="col-4 col-sm-2">節目名稱</div>
+                    <div class="col-12 col-sm-6">最新集數與連結</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="podcasts">
+                    <!-- 最新一集資訊會透過 JavaScript 動態產生 -->
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"
+        integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+        integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>
