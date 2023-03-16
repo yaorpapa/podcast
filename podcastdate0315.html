@@ -65,11 +65,15 @@
 
                     // 動態新增表格列
                     const row = $('<div>').addClass('channel row');
-                    const playButton = $('<div>').addClass('col-4 col-sm-2').html($('<button>').text('播放').attr('type', 'button').addClass('btn btn-secondary').attr('onclick', "document.getElementById('myAudio').src='" + enclosureUrl + "'").click(function () {
-    $('#myAudio').attr('src', enclosureUrl);
-    document.getElementById('myAudio').autoplay = true;
-}));
-
+const playButton = $('<div>').addClass('col-4 col-sm-2').html(
+  $('<button>').text('播放').attr('type', 'button').addClass('btn btn-secondary')
+    .attr('onclick', "document.getElementById('myAudio').src='" + enclosureUrl + "'")
+    .click(function () {
+      $('#myAudio').attr('src', enclosureUrl);
+      document.getElementById('myAudio').autoplay = true;
+      document.querySelector('.podcastTitle').textContent = '正在播放：' + episodeTitle;
+    })
+);
 
 
                     const episodeDateCell = $('<div>').addClass('col-4 col-sm-2 time').text(episodeDate.toLocaleString());
@@ -164,11 +168,9 @@
         <div class="card-deck mb-3 text-center">
           <div class="card mb-4 box-shadow">
             <div class="card-header">
-                <!-- <audio id="myAudio" class="p-2" controls>
-                    <source src="#" type="audio/mpeg">
-                </audio> -->
                 <audio id="myAudio" class="p-2" controls="" src="#" autoplay="">
                 </audio>
+                <div class="podcastTitle">尚未播放</div>
                 <hr class="w50">
                 <div class="row">
                     <div class="col-4 col-sm-2">最新音檔</div>
