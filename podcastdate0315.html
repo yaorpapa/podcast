@@ -153,6 +153,18 @@ const playButton = $('<div>').addClass('col-4 col-sm-2').html(
             });
         });
     </script>
+    <script>
+        $(document).ready(function () {
+  // 獲取當前時間
+  var currentTime = new Date();
+  // 設置時間格式
+  var options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+  // 將時間格式化
+  var formattedTime = currentTime.toLocaleDateString('en-US', options);
+  // 將時間設置為div內容
+  $('.datatime').text(formattedTime);
+});
+    </script>
 </head>
 
 <body>
@@ -171,6 +183,7 @@ const playButton = $('<div>').addClass('col-4 col-sm-2').html(
                 <audio id="myAudio" class="p-2" controls="" src="#" autoplay="">
                 </audio>
                 <div class="podcastTitle">尚未播放</div>
+                <div>更新時間：<span class="datatime"></span></div>
                 <hr class="w50">
                 <div class="row">
                     <div class="col-4 col-sm-2">最新音檔</div>
