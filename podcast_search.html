@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Podcast 資料展示</title>
-  <!-- 引入 Bootstrap CSS -->
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="Description" content="Podcast 搜尋" />
+  <title>Podcast 搜尋</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,6 +18,13 @@
       text-align: center;
       margin-bottom: 30px;
     }
+    .search-form, .category-btns {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      margin: 5px;
+    }
     table {
       width: 100%;
       margin-top: 20px;
@@ -23,20 +33,39 @@
       padding: 10px;
       text-align: left;
     }
+    #error-message {
+      color: red;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
+  <h1>Podcast 搜尋</h1>
   <div class="container">
-    <h1>Podcast 資料展示</h1>
+    <div class="row">
+      <div class="search-form col-12">
+        <input type="text" id="searchInput" class="form-control" placeholder="輸入節目名稱" required>
+        <button class="btn btn-primary" onclick="fetchPodcasts()">搜尋</button>
+      </div>
+    </div>
+    
+    <!-- 類別按鈕 -->
+    <div class="col-12 text-center category-btns">
+      <h4>選擇類別</h4>
+      <div id="categoryButtons"></div>
+    </div>
+    
+    <p id="error-message"></p>
     <table id="podcastTable" class="table table-bordered table-striped">
-      <thead class="thead-dark">
+      <thead class="thead-light">
         <tr>
-          <th>ID</th>
-          <th>日期</th>
           <th>類別</th>
-          <th>排名</th>
+          <th>日期</th>
           <th>節目名稱</th>
           <th>主持人</th>
+          <th>最新排名</th>
         </tr>
       </thead>
       <tbody>
@@ -45,33 +74,96 @@
     </table>
   </div>
 
-  <!-- 載入 Supabase JavaScript 客戶端 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script>
-  const supabaseUrl = 'https://xfnxyruqxvkbtophggyo.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmbnh5cnVxeHZrYnRvcGhnZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5ODgxMjMsImV4cCI6MjA1NDU2NDEyM30.BUmM4OTl9kbCBraAhNPSVvHY1pGSfsM-ZILkglbhsds';
+  <script>
+    const supabaseUrl = 'https://xfnxyruqxvkbtophggyo.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmbnh5cnVxeHZrYnRvcGhnZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5ODgxMjMsImV4cCI6MjA1NDU2NDEyM30.BUmM4OTl9kbCBraAhNPSVvHY1pGSfsM-ZILkglbhsds';
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+    let currentCategory = null;
 
-  // 方法 1：使用 window.supabase 來初始化
-  const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+    document.addEventListener("DOMContentLoaded", function() {
+      const categories = ['熱門', '社會與文化', '喜劇', '新聞', '教育', '商業', '健康與瘦身', '藝術', '音樂', '宗教與精神生活', '運動', '科學', '歷史', '犯罪紀實', '科技', '兒童與家庭', '電視與電影', '休閒', '小說', '政府'];
+      const categoryButtonsContainer = document.getElementById("categoryButtons");
+      
+      if (categoryButtonsContainer) {
+        categories.forEach(category => {
+          const button = document.createElement("button");
+          button.className = "btn btn-light m-2";
+          button.innerText = category;
+          button.onclick = () => fetchCategory(category);
+          categoryButtonsContainer.appendChild(button);
+        });
+      }
+    });
 
-  // 或方法 2：解構賦值
-  // const { createClient } = window.supabase;
-  // const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-
-  // 例如，讀取 podcasts 資料表並在 Console 輸出
-  async function fetchPodcasts() {
-    const { data, error } = await supabaseClient
-      .from('podcasts')
-      .select('*')
-      .order('date', { ascending: false });
-    if (error) {
-      console.error("讀取資料錯誤：", error);
-      return;
+    async function fetchPodcasts() {
+      document.querySelector("#podcastTable tbody").innerHTML = "";
+      currentCategory = null; // 清空當前類別，確保搜尋功能可用
+      try {
+        const searchTerm = document.getElementById("searchInput").value.trim();
+        let query = supabaseClient.from('podcasts').select('*').order('rank', { ascending: true }).limit(200);
+        if (searchTerm) {
+          query = query.ilike('title', `%${searchTerm}%`);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          document.getElementById("error-message").textContent = "沒有找到符合條件的 Podcast 資料。";
+          return;
+        }
+        document.getElementById("error-message").textContent = "";
+        const tableBody = document.querySelector("#podcastTable tbody");
+        data.sort((a, b) => a.rank - b.rank); // 確保排名按 1, 2, 3, 4, ..., 10, 11, 12 排序
+        data.forEach(podcast => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${podcast.category || '無資料'}</td>
+            <td>${podcast.date || '無資料'}</td>
+            <td>${podcast.title || '無資料'}</td>
+            <td>${podcast.host || '無資料'}</td>
+            <td>${podcast.rank || '無資料'}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("讀取 Podcast 錯誤：", err);
+        document.getElementById("error-message").textContent = "讀取 Podcast 時發生錯誤，請檢查控制台。";
+      }
     }
-    console.log(data);
-  }
-  fetchPodcasts();
-</script>
 
+    async function fetchCategory(category) {
+      document.querySelector("#podcastTable tbody").innerHTML = "";
+      currentCategory = category; // 更新當前類別，確保搜尋不影響類別
+      try {
+        const { data, error } = await supabaseClient
+          .from('podcasts')
+          .select('*')
+          .eq('category', category)
+          .order('rank', { ascending: true })
+          .limit(200);
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          document.getElementById("error-message").textContent = `沒有找到 ${category} 類別的 Podcast 資料。`;
+          return;
+        }
+        document.getElementById("error-message").textContent = "";
+        const tableBody = document.querySelector("#podcastTable tbody");
+        data.sort((a, b) => a.rank - b.rank); // 確保排名按 1, 2, 3, 4, ..., 10, 11, 12 排序
+        data.forEach(podcast => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${podcast.category || '無資料'}</td>
+            <td>${podcast.date || '無資料'}</td>
+            <td>${podcast.title || '無資料'}</td>
+            <td>${podcast.host || '無資料'}</td>
+            <td>${podcast.rank || '無資料'}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } catch (err) {
+        console.error(`讀取 ${category} Podcast 錯誤：`, err);
+        document.getElementById("error-message").textContent = `讀取 ${category} Podcast 時發生錯誤，請檢查控制台。`;
+      }
+    }
+  </script>
 </body>
 </html>
