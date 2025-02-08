@@ -2,12 +2,10 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <meta name="Description" content="Podcast 搜尋與資料展示" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Podcast 資料展示</title>
+  <!-- 引入 Bootstrap CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <title>Podcast 搜尋</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,126 +15,76 @@
       text-align: center;
       margin-bottom: 30px;
     }
-    .search-form {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .btn {
-      margin: 5px;
-    }
     table {
       width: 100%;
       margin-top: 20px;
     }
-    th,
-    td {
+    th, td {
       padding: 10px;
       text-align: left;
     }
   </style>
 </head>
 <body>
-  <h1>Podcast 搜尋</h1>
   <div class="container">
-    <div class="row">
-      <!-- 搜尋表單 -->
-      <div class="search-form col-12">
-        <input type="text" id="searchTerm" class="form-control" placeholder="輸入節目名稱">
-        <button id="searchBtn" class="btn btn-primary">搜尋</button>
-      </div>
-    </div>
-    <div class="row">
-      <!-- 顯示查詢結果的表格 -->
-      <div class="col-12">
-        <table id="podcast-table" class="table table-bordered table-striped">
-          <thead class="thead-light">
-            <tr>
-              <th>類別</th>
-              <th>日期</th>
-              <th>節目名稱</th>
-              <th>主持人</th>
-              <th>最新排名</th>
-              <th>上次排名</th>
-              <th>排名變化</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- 查詢結果將插入在此 -->
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <h1>Podcast 資料展示</h1>
+    <table id="podcastTable" class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr>
+          <th>ID</th>
+          <th>日期</th>
+          <th>類別</th>
+          <th>排名</th>
+          <th>節目名稱</th>
+          <th>主持人</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 資料列將會動態插入 -->
+      </tbody>
+    </table>
   </div>
 
   <!-- 載入 Supabase JavaScript 客戶端 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // 請將下列變數替換為你的 Supabase 專案資訊
+    // 設定 Supabase 參數（請依您的實際資料替換以下值）
     const supabaseUrl = 'https://xfnxyruqxvkbtophggyo.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmbnh5cnVxeHZrYnRvcGhnZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5ODgxMjMsImV4cCI6MjA1NDU2NDEyM30.BUmM4OTl9kbCBraAhNPSVvHY1pGSfsM-ZILkglbhsds';
 
     // 初始化 Supabase 客戶端
     const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-    // 將查詢結果顯示在表格中
-    function displayPodcasts(podcasts) {
-      const tbody = document.querySelector("#podcast-table tbody");
-      tbody.innerHTML = "";
-      podcasts.forEach(podcast => {
-        const tr = document.createElement("tr");
-        // 假設資料庫中的欄位名稱為：date, category, rank, title, host, prev_rank, rank_increase
+    // 從 podcasts 資料表中讀取所有資料，並以日期降序排列
+    async function fetchPodcasts() {
+      const { data, error } = await supabase
+        .from('podcasts')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error("讀取資料錯誤：", error);
+        return;
+      }
+
+      const tbody = document.querySelector('#podcastTable tbody');
+      tbody.innerHTML = ''; // 清空現有內容
+      data.forEach(record => {
+        const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${podcast.category || '無資料'}</td>
-          <td>${podcast.date || '無資料'}</td>
-          <td>${podcast.title || '無資料'}</td>
-          <td>${podcast.host || '無資料'}</td>
-          <td>${podcast.rank || '無資料'}</td>
-          <td>${podcast.prev_rank || '無資料'}</td>
-          <td>${podcast.rank_increase || '無資料'}</td>
+          <td>${record.id || ''}</td>
+          <td>${record.date || ''}</td>
+          <td>${record.category || ''}</td>
+          <td>${record.rank || ''}</td>
+          <td>${record.title || ''}</td>
+          <td>${record.host || ''}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // 從 Supabase 中讀取所有 Podcast 資料（預設依日期降序排序）
-    async function fetchAllPodcasts() {
-      let { data, error } = await supabase
-        .from('podcasts')
-        .select('*')
-        .order('date', { ascending: false });
-      if (error) {
-        console.error("讀取資料錯誤：", error);
-        return;
-      }
-      displayPodcasts(data);
-    }
-
-    // 根據輸入的節目名稱進行搜尋（不區分大小寫）
-    async function searchPodcastsByTitle(title) {
-      let { data, error } = await supabase
-        .from('podcasts')
-        .select('*')
-        .ilike('title', `%${title}%`)
-        .order('date', { ascending: false });
-      if (error) {
-        console.error("搜尋錯誤：", error);
-        return;
-      }
-      displayPodcasts(data);
-    }
-
-    // 當使用者點擊搜尋按鈕時
-    document.getElementById('searchBtn').addEventListener('click', () => {
-      const searchTerm = document.getElementById('searchTerm').value;
-      if (searchTerm.trim() === "") {
-        fetchAllPodcasts();
-      } else {
-        searchPodcastsByTitle(searchTerm);
-      }
-    });
-
-    // 頁面載入時預設讀取所有 Podcast 資料
-    fetchAllPodcasts();
+    // 當頁面載入時呼叫 fetchPodcasts
+    document.addEventListener('DOMContentLoaded', fetchPodcasts);
   </script>
 </body>
 </html>
