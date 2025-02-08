@@ -112,7 +112,7 @@
       </div> -->
 
       <!-- 按類別排序 -->
-      <div class="sort-btn col-12">
+      <div class="sort-btn col-12 ">
         <button class="btn btn-secondary" onclick="sortTableByCategory()">按類別排序</button>
       </div>
     </div>
@@ -146,9 +146,9 @@
     let currentCategory = null;
 
     document.addEventListener("DOMContentLoaded", function() {
+      // 建立類別按鈕
       const categories = ['熱門', '社會與文化', '新聞', '教育', '商業', '健康與瘦身', '藝術', '音樂', '宗教與精神生活', '運動', '科學', '歷史', '犯罪紀實', '科技', '兒童與家庭', '電視與電影', '休閒', '小說', '政府'];
       const categoryButtonsContainer = document.getElementById("categoryButtons");
-      
       if (categoryButtonsContainer) {
         categories.forEach(category => {
           const button = document.createElement("button");
@@ -158,6 +158,9 @@
           categoryButtonsContainer.appendChild(button);
         });
       }
+      // 預設先搜尋「想睡的聲音」
+      document.getElementById("searchInput").value = "想睡的聲音";
+      fetchPodcasts();
     });
 
     // 按下搜尋按鈕後
@@ -263,7 +266,7 @@
     }
   </script>
 
-  <!-- JavaScript 用來隱藏 "無資料" 的行 和按類別排序 -->
+  <!-- JavaScript 用來隱藏 "無資料" 的行 與 按類別排序 -->
   <script>
     function hideNoDataRows() {
       const rows = document.querySelectorAll('#podcastTable .podcast-row');
