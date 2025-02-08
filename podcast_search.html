@@ -47,44 +47,31 @@
 
   <!-- 載入 Supabase JavaScript 客戶端 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script>
-    // 設定 Supabase 參數（請依您的實際資料替換以下值）
-    const supabaseUrl = 'https://xfnxyruqxvkbtophggyo.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmbnh5cnVxeHZrYnRvcGhnZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5ODgxMjMsImV4cCI6MjA1NDU2NDEyM30.BUmM4OTl9kbCBraAhNPSVvHY1pGSfsM-ZILkglbhsds';
+<script>
+  const supabaseUrl = 'https://xfnxyruqxvkbtophggyo.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmbnh5cnVxeHZrYnRvcGhnZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5ODgxMjMsImV4cCI6MjA1NDU2NDEyM30.BUmM4OTl9kbCBraAhNPSVvHY1pGSfsM-ZILkglbhsds';
 
-    // 初始化 Supabase 客戶端
-    const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+  // 方法 1：使用 window.supabase 來初始化
+  const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-    // 從 podcasts 資料表中讀取所有資料，並以日期降序排列
-    async function fetchPodcasts() {
-      const { data, error } = await supabase
-        .from('podcasts')
-        .select('*')
-        .order('date', { ascending: false });
+  // 或方法 2：解構賦值
+  // const { createClient } = window.supabase;
+  // const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-      if (error) {
-        console.error("讀取資料錯誤：", error);
-        return;
-      }
-
-      const tbody = document.querySelector('#podcastTable tbody');
-      tbody.innerHTML = ''; // 清空現有內容
-      data.forEach(record => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${record.id || ''}</td>
-          <td>${record.date || ''}</td>
-          <td>${record.category || ''}</td>
-          <td>${record.rank || ''}</td>
-          <td>${record.title || ''}</td>
-          <td>${record.host || ''}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+  // 例如，讀取 podcasts 資料表並在 Console 輸出
+  async function fetchPodcasts() {
+    const { data, error } = await supabaseClient
+      .from('podcasts')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) {
+      console.error("讀取資料錯誤：", error);
+      return;
     }
+    console.log(data);
+  }
+  fetchPodcasts();
+</script>
 
-    // 當頁面載入時呼叫 fetchPodcasts
-    document.addEventListener('DOMContentLoaded', fetchPodcasts);
-  </script>
 </body>
 </html>
