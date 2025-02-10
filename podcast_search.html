@@ -129,8 +129,8 @@
       <!-- 表頭 -->
       <div class="podcast-header d-flex">
         <div class="podcast-cell col-2">類別</div>
-        <div class="podcast-cell col-3">資料日期</div>
-        <div class="podcast-cell col-1">排行榜</div>
+        <div class="podcast-cell col-2">資料日期</div>
+        <div class="podcast-cell col-2">排行榜</div>
         <div class="podcast-cell col-3">節目名稱</div>
         <div class="podcast-cell col-3">主持人</div>
       </div>
@@ -201,8 +201,8 @@
           row.className = "podcast-row d-flex";
           row.innerHTML = `
             <div class="podcast-cell col-2">${podcast.category || '無資料'}</div>
-            <div class="podcast-cell col-3">${podcast.date || '無資料'}</div>
-            <div class="podcast-cell col-1">${podcast.rank || '無資料'}</div>
+            <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
+            <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
             <div class="podcast-cell col-3">${podcast.title || '無資料'}</div>
             <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
           `;
@@ -249,8 +249,8 @@
           row.className = "podcast-row d-flex";
           row.innerHTML = `
             <div class="podcast-cell col-2">${podcast.category || '無資料'}</div>
-            <div class="podcast-cell col-3">${podcast.date || '無資料'}</div>
-            <div class="podcast-cell col-1">${podcast.rank || '無資料'}</div>
+            <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
+            <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
             <div class="podcast-cell col-3">${podcast.title || '無資料'}</div>
             <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
           `;
