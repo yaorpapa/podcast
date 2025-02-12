@@ -99,6 +99,15 @@
       font-weight: bold;
       margin-top: 20px;
     }
+    /* 修改連結顏色，不使用深藍色，改成橘色 */
+    a {
+      color: #e0e0e0 !important;
+      text-decoration: none;
+    }
+    a:hover {
+      color: #ccc !important;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
@@ -163,6 +172,22 @@
       fetchPodcasts();
     });
 
+    // 點擊節目名稱，填入搜尋框並搜尋該節目
+    function searchPodcast(title) {
+      document.getElementById("searchInput").value = title;
+      fetchPodcasts();
+    }
+
+    // 點擊類別，跳到該類別的排行頁面
+    function goToCategoryRanking(category) {
+      // 此處以呼叫 fetchCategory() 來模擬排行榜頁面，
+      // 若有獨立的排行榜頁面，也可用 window.location.href 跳轉，如：
+      // window.location.href = `ranking.html?category=${encodeURIComponent(category)}`;
+      fetchCategory(category);
+      // 可選：若需要滾動到頁面頂部
+      window.scrollTo(0,0);
+    }
+
     // 搜尋按鈕觸發的函式
     async function fetchPodcasts() {
       const body = document.querySelector("#podcastTable .podcast-body");
@@ -200,10 +225,14 @@
           const row = document.createElement("div");
           row.className = "podcast-row d-flex";
           row.innerHTML = `
-            <div class="podcast-cell col-2">${podcast.category || '無資料'}</div>
+            <div class="podcast-cell col-2">
+              ${podcast.category ? `<a href="#" onclick="goToCategoryRanking('${podcast.category}')">${podcast.category}</a>` : '無資料'}
+            </div>
             <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
             <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
-            <div class="podcast-cell col-3">${podcast.title || '無資料'}</div>
+            <div class="podcast-cell col-3">
+              ${podcast.title ? `<a href="#" onclick="searchPodcast('${podcast.title}')">${podcast.title}</a>` : '無資料'}
+            </div>
             <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
           `;
           body.appendChild(row);
@@ -248,10 +277,14 @@
           const row = document.createElement("div");
           row.className = "podcast-row d-flex";
           row.innerHTML = `
-            <div class="podcast-cell col-2">${podcast.category || '無資料'}</div>
+            <div class="podcast-cell col-2">
+              ${podcast.category ? `<a href="#" onclick="goToCategoryRanking('${podcast.category}')">${podcast.category}</a>` : '無資料'}
+            </div>
             <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
             <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
-            <div class="podcast-cell col-3">${podcast.title || '無資料'}</div>
+            <div class="podcast-cell col-3">
+              ${podcast.title ? `<a href="#" onclick="searchPodcast('${podcast.title}')">${podcast.title}</a>` : '無資料'}
+            </div>
             <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
           `;
           body.appendChild(row);
@@ -261,10 +294,8 @@
         document.getElementById("error-message").textContent = `讀取 ${category} Podcast 時發生錯誤，請檢查控制台。`;
       }
     }
-  </script>
 
-  <!-- JavaScript 用來隱藏 "無資料" 的行 與 按類別排序 -->
-  <script>
+    // JavaScript 用來隱藏 "無資料" 的行 與 按類別排序
     function hideNoDataRows() {
       const rows = document.querySelectorAll('#podcastTable .podcast-row');
       rows.forEach(row => {
