@@ -24,7 +24,7 @@
       margin-bottom: 30px;
       color: #ffffff;
     }
-    .search-form, .category-btns {
+    .search-form, .category-btns, .action-btns {
       text-align: center;
       margin-bottom: 20px;
     }
@@ -66,7 +66,7 @@
       text-align: center;
       margin-bottom: 20px;
     }
-    /* Podcast 列表版面 */
+    /* Podcast 列表版面 (共用樣式) */
     .podcast-table {
       margin-top: 20px;
       width: 100%;
@@ -92,13 +92,13 @@
     .podcast-cell {
       flex: 1;
       padding: 5px;
-      min-width: 0;
+      min-width: 0; /* Needed for flex items to wrap */
       overflow-wrap: break-word;
-      word-wrap: break-word;
-      white-space: normal;
+      word-wrap: break-word; /* Older browsers */
+      white-space: normal; /* Ensure text wraps */
     }
     /* 錯誤訊息 */
-    #error-message {
+    #error-message, #ranking-error-message {
       color: #ff6666;
       text-align: center;
       font-weight: bold;
@@ -113,6 +113,12 @@
       color: #ffa726 !important;
       text-decoration: underline;
     }
+    /* Loading indicator */
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: #bbb;
+    }
   </style>
 </head>
 <body>
@@ -121,18 +127,19 @@
     <div class="row text-center">
       <!-- 搜尋區塊 -->
       <div class="search-form col-12">
-        <input type="text" id="searchInput" class="form-control" placeholder="輸入節目名稱，若多筆以 , 分隔" required>
+        <input type="text" id="searchInput" class="form-control d-inline-block w-auto" placeholder="輸入節目名稱，若多筆以 , 分隔" required>
         <button class="btn btn-primary" onclick="fetchPodcasts()">搜尋</button>
         <!-- 新增的按鈕：指定節目連結 -->
         <button class="btn btn-primary" onclick="toggleSpecifiedLinks()">指定節目連結</button>
       </div>
-      
+
       <!-- 指定節目連結按鈕容器 -->
       <div id="specifiedLinks" class="specified-links" style="display:none;"></div>
-      
-      <!-- 按類別排序 -->
-      <div class="sort-btn col-12">
+
+      <!-- 其他操作按鈕 -->
+      <div class="action-btns col-12">
         <button class="btn btn-secondary" onclick="sortTableByCategory()">按類別排序</button>
+        <button id="specificRankingBtn" class="btn btn-secondary">指定節目排行</button>
       </div>
     </div>
 
@@ -156,6 +163,13 @@
       <!-- 資料列區 -->
       <div class="podcast-body"></div>
     </div>
+
+    <!-- 用於顯示指定節目排行結果的表格容器 -->
+    <div id="rankingTableContainer" style="display: none;"> <!-- 預設隱藏 -->
+        <!-- 排行榜表格將會插入這裡 -->
+    </div>
+    <!-- 將錯誤訊息移到容器外面，避免被 innerHTML 覆蓋 -->
+    <p id="ranking-error-message"></p>
   </div>
 
   <script>
@@ -163,9 +177,9 @@
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmbnh5cnVxeHZrYnRvcGhnZ3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5ODgxMjMsImV4cCI6MjA1NDU2NDEyM30.BUmM4OTl9kbCBraAhNPSVvHY1pGSfsM-ZILkglbhsds';
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
     let currentCategory = null;
-    
+
     // 指定節目清單
-    const specifiedShows = ['想睡的聲音', '通勤聽育兒', '通勤學英語', 'GK爸爸原創故事繪本', '屎作勇者', '寧可當吃貨', '史塔克實驗室', '殺時間機器', '異溫層', '心理師乾杯', '巧言巧語', '恩典牌爸媽', '費雪阿姨說故事', 'AC交流殿', '天下第一台', '丁丁說故事', '下一本讀什麼', '別人的工作最有趣', '外星孩子的地球日記', '塞呷', '奔奔小劇場', '小莎發時光', '心理師的歡樂之旅', '微叛逆女孩', '政大女孩悄悄話', '故事堅果塔', '故事虎咬豬', '敘事圈', '欖仁媽媽', '週報時光機', '無厘頭生存', '童話透中島', '笨瓜秀', '精算媽咪的家計簿', '古今中歪', '臨時想株式會社', '阿國呷土豆', '魚活通亂亂說'];
+    const specifiedShows = ['想睡的聲音：睡前童話故事', '通勤聽育兒', '通勤學英語 15Mins Today', 'GK爸爸原創故事繪本', '費雪阿姨說故事', '丁丁說故事', '奔奔小劇場', '故事堅果塔', '故事虎咬豬', '童話透中島', '欖仁媽媽說故事', '屎作勇者', '寧可當吃貨', '史塔克實驗室', '響噹噹', '殺時間機器', '異溫層 Podcast', '心理師乾杯', '巧言巧語', '恩典牌爸媽', 'AC交流殿', '天下第一台', '下一本讀什麼？', '別人的工作最有趣', '外星孩子的地球日記', '塞呷Sai-Jia', '小莎發時光Sara\'s Sofa Space', '心理師的歡樂之旅', '微叛逆女孩', '政大女孩悄悄話', '敘事圈 StoryCircle', '週報時光機（生活歷史、品牌故事）', '無厘頭生存', '笨瓜秀', '精算媽咪的家計簿', '古今中歪', 'nop!an 臨時想株式會社', '阿國呷土豆', '魚活通亂亂說'];
 
     document.addEventListener("DOMContentLoaded", function() {
       // 建立類別按鈕
@@ -180,92 +194,171 @@
           categoryButtonsContainer.appendChild(button);
         });
       }
+
+      // 綁定指定節目排行按鈕事件
+      const specificRankingBtn = document.getElementById('specificRankingBtn');
+      if (specificRankingBtn) {
+          specificRankingBtn.addEventListener('click', fetchSpecificRankings);
+      }
+
       // 預設先搜尋「想睡的聲音」
       document.getElementById("searchInput").value = "想睡的聲音";
       fetchPodcasts();
     });
-    
+
+    // 輔助函式：顯示主列表，隱藏指定排行列表
+    function showMainTable() {
+        const podcastTable = document.getElementById('podcastTable');
+        const rankingContainer = document.getElementById('rankingTableContainer');
+        const rankingErrorMessage = document.getElementById('ranking-error-message');
+
+        if (podcastTable) podcastTable.style.display = 'block';
+        if (rankingContainer) {
+            rankingContainer.style.display = 'none';
+            rankingContainer.innerHTML = ''; // 清空內容
+        }
+        if (rankingErrorMessage) rankingErrorMessage.textContent = ''; // 清空錯誤訊息
+    }
+
+    // 輔助函式：顯示指定排行列表，隱藏主列表
+    function showRankingTable() {
+        const podcastTable = document.getElementById('podcastTable');
+        const rankingContainer = document.getElementById('rankingTableContainer');
+        const errorMessage = document.getElementById("error-message"); // 主列表的錯誤訊息
+
+        if (podcastTable) podcastTable.style.display = 'none';
+        if (rankingContainer) rankingContainer.style.display = 'block';
+        if (errorMessage) errorMessage.textContent = ''; // 清空主列表錯誤訊息
+    }
+
+
     // 點選節目名稱，填入搜尋框並搜尋該節目
     function searchPodcast(title) {
       document.getElementById("searchInput").value = title;
-      fetchPodcasts();
+      fetchPodcasts(); // fetchPodcasts 會呼叫 showMainTable
+      window.scrollTo(0, 0); // 滾動到頁面頂部方便查看結果
     }
-    
+
     // 點選類別，跳到該類別的排行榜頁面
     function goToCategoryRanking(category) {
-      fetchCategory(category);
+      fetchCategory(category); // fetchCategory 會呼叫 showMainTable
       window.scrollTo(0, 0);
     }
-    
+
+    // 顯示 Podcast 列表 (通用函式)
+    function displayPodcasts(data, containerSelector) {
+        const body = document.querySelector(containerSelector);
+        if (!body) {
+            console.error(`找不到容器：${containerSelector}`);
+            return;
+        }
+        body.innerHTML = ""; // 清空現有內容
+
+        if (!data || data.length === 0) {
+            // 錯誤訊息由呼叫者處理
+            return;
+        }
+
+        data.forEach(podcast => {
+            const row = document.createElement("div");
+            row.className = "podcast-row d-flex";
+            row.innerHTML = `
+                <div class="podcast-cell col-2">
+                  ${podcast.category ? `<a href="#" onclick="goToCategoryRanking('${podcast.category}')">${podcast.category}</a>` : '無資料'}
+                </div>
+                <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
+                <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
+                <div class="podcast-cell col-3">
+                  ${podcast.title ? `<a href="#" onclick="searchPodcast('${podcast.title}')">${podcast.title}</a>` : '無資料'}
+                </div>
+                <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
+            `;
+            body.appendChild(row);
+        });
+    }
+
     // 搜尋或列出符合輸入關鍵字的 Podcast 資料 (部分比對)
     async function fetchPodcasts() {
+      showMainTable(); // <--- 新增：確保顯示主列表，隱藏指定排行
       const body = document.querySelector("#podcastTable .podcast-body");
-      body.innerHTML = "";
+      const errorMessage = document.getElementById("error-message");
+      // 確保元素存在
+      if (!body || !errorMessage) {
+          console.error("找不到 podcastTable body 或 error-message 元素");
+          return;
+      }
+      body.innerHTML = '<div class="loading">讀取中...</div>'; // 顯示讀取中
+      errorMessage.textContent = "";
       currentCategory = null;
+
       try {
-        const searchTerm = document.getElementById("searchInput").value.trim();
+        const searchInput = document.getElementById("searchInput");
+        if (!searchInput) {
+            console.error("找不到 searchInput 元素");
+            errorMessage.textContent = "發生內部錯誤，無法搜尋。";
+            body.innerHTML = "";
+            return;
+        }
+        const searchTerm = searchInput.value.trim();
         let query;
         // 若輸入包含逗號，視為多筆查詢
         if (searchTerm.includes(',')) {
           const podcastNames = searchTerm.split(',').map(s => s.trim()).filter(Boolean);
-          const orCondition = podcastNames.map(name => `title.ilike.%${name}%`).join(',');
+          // 使用 'in' 篩選器，並對每個名稱使用 ilike
+          const orConditions = podcastNames.map(name => `title.ilike.%${name}%`).join(',');
           query = supabaseClient
             .from('podcasts')
             .select('*')
-            .or(orCondition)
-            .limit(200);
+            .or(orConditions)
+            .order('date', { ascending: false }) // 按日期排序，方便後續處理
+            .limit(500); // 增加限制以處理多節目
         } else {
           // 單一節目或關鍵字搜尋，採用部分比對
           query = supabaseClient
             .from('podcasts')
             .select('*')
+            .order('date', { ascending: false }) // 按日期排序
             .limit(200);
           if (searchTerm) {
             query = query.ilike('title', `%${searchTerm}%`);
           }
         }
-    
+
         const { data, error } = await query;
         if (error) throw error;
+
         if (!data || data.length === 0) {
-          document.getElementById("error-message").textContent = "沒有找到符合條件的 Podcast 資料。";
+          errorMessage.textContent = "沒有找到符合條件的 Podcast 資料。";
+          body.innerHTML = ""; // 清空讀取中訊息
           return;
         }
-        document.getElementById("error-message").textContent = "";
-    
-        let displayData = [];
+
+        // 處理排序：按日期降序，同日期按排名升序
         data.sort((a, b) => {
           if (a.date < b.date) return 1;
           if (a.date > b.date) return -1;
-          return a.rank - b.rank;
+          // 修改此處，確保排名為數字，且無排名視為 Infinity
+          const rankA = parseInt(a.rank) || Infinity;
+          const rankB = parseInt(b.rank) || Infinity;
+          return rankA - rankB;
         });
-        displayData = data;
-    
-        displayData.forEach(podcast => {
-          const row = document.createElement("div");
-          row.className = "podcast-row d-flex";
-          row.innerHTML = `
-            <div class="podcast-cell col-2">
-              ${podcast.category ? `<a href="#" onclick="goToCategoryRanking('${podcast.category}')">${podcast.category}</a>` : '無資料'}
-            </div>
-            <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
-            <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
-            <div class="podcast-cell col-3">
-              ${podcast.title ? `<a href="#" onclick="searchPodcast('${podcast.title}')">${podcast.title}</a>` : '無資料'}
-            </div>
-            <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
-          `;
-          body.appendChild(row);
-        });
+
+        displayPodcasts(data, "#podcastTable .podcast-body");
+
       } catch (err) {
         console.error("讀取 Podcast 錯誤：", err);
-        document.getElementById("error-message").textContent = "讀取 Podcast 時發生錯誤，請檢查控制台。";
+        errorMessage.textContent = "讀取 Podcast 時發生錯誤，請檢查控制台。";
+        body.innerHTML = ""; // 清空讀取中訊息
       }
     }
-    
+
     // 新增函式：切換指定節目連結區塊的顯示狀態，並建立指定節目連結按鈕
     function toggleSpecifiedLinks() {
       const container = document.getElementById("specifiedLinks");
+      if (!container) {
+          console.error("找不到 specifiedLinks 容器");
+          return;
+      }
       // 如果容器目前隱藏，則建立按鈕並顯示；若已顯示則隱藏
       if (container.style.display === "none" || container.style.display === "") {
         // 清空容器（避免重複建立）
@@ -283,9 +376,9 @@
         container.style.display = "none";
       }
     }
-    
-    // 點擊類別按鈕時觸發的函式
-    async function fetchCategory(category) {
+
+     // 點擊類別按鈕時觸發的函式
+     async function fetchCategory(category) {
       const body = document.querySelector("#podcastTable .podcast-body");
       body.innerHTML = "";
       currentCategory = category;
@@ -326,41 +419,287 @@
         document.getElementById("error-message").textContent = `讀取 ${category} Podcast 時發生錯誤，請檢查控制台。`;
       }
     }
-    
+
     // JavaScript 用來隱藏 "無資料" 的行 與按類別排序
+    // 注意：hideNoDataRows 目前未被呼叫，如果需要此功能，需在適當時機呼叫
     function hideNoDataRows() {
       const rows = document.querySelectorAll('#podcastTable .podcast-row');
       rows.forEach(row => {
         const cells = row.querySelectorAll('.podcast-cell');
         let hideRow = false;
         cells.forEach(cell => {
-          if (cell.textContent === '無資料') {
+          // 改為檢查 cell 的 innerText 或 textContent 是否完全等於 '無資料'
+          if (cell.innerText.trim() === '無資料') {
             hideRow = true;
           }
         });
         if (hideRow) {
           row.style.display = 'none';
+        } else {
+          row.style.display = 'flex'; // 確保之前隱藏的可以顯示回來
         }
       });
     }
-    
+
     function sortTableByCategory() {
+      showMainTable(); // <--- 新增：確保顯示主列表，隱藏指定排行
       const container = document.getElementById('podcastTable');
-      const rows = Array.from(container.querySelectorAll('.podcast-body .podcast-row'));
+      if (!container) {
+          console.error("找不到 podcastTable 容器");
+          return;
+      }
+      const body = container.querySelector('.podcast-body');
+      if (!body) {
+          console.error("找不到 podcastTable body");
+          return;
+      }
+      const rows = Array.from(body.querySelectorAll('.podcast-row'));
+
       rows.sort((a, b) => {
         const cellsA = a.querySelectorAll('.podcast-cell');
         const cellsB = b.querySelectorAll('.podcast-cell');
-        const categoryA = cellsA[0].innerText.toLowerCase();
-        const categoryB = cellsB[0].innerText.toLowerCase();
+
+        // 比較類別 (第 1 個 cell)
+        const categoryA = cellsA[0]?.innerText.trim().toLowerCase() || '';
+        const categoryB = cellsB[0]?.innerText.trim().toLowerCase() || '';
         if (categoryA < categoryB) return -1;
         if (categoryA > categoryB) return 1;
-        const rankingA = parseInt(cellsA[2].innerText) || 0;
-        const rankingB = parseInt(cellsB[2].innerText) || 0;
-        return rankingA - rankingB;
+
+        // 類別相同，比較排名 (第 3 個 cell)
+        const rankA = parseInt(cellsA[2]?.innerText.trim()) || Infinity; // 無排名視為無限大
+        const rankB = parseInt(cellsB[2]?.innerText.trim()) || Infinity;
+        return rankA - rankB;
       });
-      const body = container.querySelector('.podcast-body');
+
+      // 清空並重新附加排序後的行
+      body.innerHTML = '';
       rows.forEach(row => body.appendChild(row));
     }
+
+    // --- 新增：處理指定節目排行 ---
+
+    // 獲取指定節目的最新排行資料 (修改版：顯示最新日期 +/- 10 分鐘內的所有類別)
+    async function fetchSpecificRankings() {
+        const rankingContainer = document.getElementById('rankingTableContainer');
+        const rankingErrorMessage = document.getElementById('ranking-error-message');
+
+        if (!rankingContainer || !rankingErrorMessage) {
+            console.error("找不到 rankingTableContainer 或 ranking-error-message 元素");
+            return;
+        }
+
+        showRankingTable();
+        rankingContainer.innerHTML = '<div class="loading">讀取指定節目排行中...</div>';
+        rankingErrorMessage.textContent = '';
+
+        try {
+            // 為每個指定節目建立一個查詢 Promise，獲取所有記錄並按日期排序
+            const promises = specifiedShows.map(showTitle =>
+                supabaseClient
+                    .from('podcasts')
+                    .select('*')
+                    .eq('title', showTitle)
+                    .order('date', { ascending: false }) // 獲取所有記錄，最新日期在前
+                    // 增加 limit 以防萬一，但主要靠後續篩選
+                    .limit(50) // 假設一個節目在短時間內不會有超過50個類別更新
+            );
+
+            const results = await Promise.allSettled(promises);
+
+            const allLatestEntries = [];
+            const timeWindowMinutes = 10; // 設定時間窗口（分鐘）
+            const timeWindowMillis = timeWindowMinutes * 60 * 1000;
+
+            results.forEach((result, index) => {
+                const showTitle = specifiedShows[index];
+                const showIndex = index; // 保留原始順序索引
+
+                if (result.status === 'fulfilled') {
+                    const { data, error } = result.value;
+                    if (error) {
+                        console.warn(`查詢節目 "${showTitle}" 時出錯:`, error.message);
+                        allLatestEntries.push({ title: showTitle, error: true, showIndex });
+                    } else if (data && data.length > 0) {
+                        // 找到此節目的絕對最新日期字串
+                        const latestDateString = data[0].date;
+                        if (!latestDateString) {
+                            console.warn(`節目 "${showTitle}" 的最新記錄缺少日期`);
+                            allLatestEntries.push({ title: showTitle, nodata: true, showIndex }); // 或視為錯誤
+                            return; // 繼續下一個節目
+                        }
+
+                        try {
+                            // 將最新日期字串轉換為 Date 物件
+                            const latestDateObj = new Date(latestDateString);
+                            const latestTime = latestDateObj.getTime();
+
+                            // 計算時間窗口的開始和結束時間戳 (毫秒)
+                            const startTime = latestTime - timeWindowMillis;
+                            const endTime = latestTime + timeWindowMillis;
+
+                            // 篩選出所有日期落在時間窗口內的記錄
+                            const latestEntries = data.filter(entry => {
+                                if (!entry.date) return false; // 忽略沒有日期的記錄
+                                try {
+                                    const entryDateObj = new Date(entry.date);
+                                    const entryTime = entryDateObj.getTime();
+                                    // 檢查時間戳是否在區間內
+                                    return entryTime >= startTime && entryTime <= endTime;
+                                } catch (parseError) {
+                                    console.warn(`無法解析節目 "${showTitle}" 的日期: ${entry.date}`, parseError);
+                                    return false; // 無法解析的日期不納入
+                                }
+                            });
+
+                            if (latestEntries.length > 0) {
+                                // 為每個找到的記錄添加原始索引，以便排序
+                                latestEntries.forEach(entry => entry.showIndex = showIndex);
+                                allLatestEntries.push(...latestEntries); // 添加所有符合條件的記錄
+                            } else {
+                                // 雖然有資料，但在時間窗口內找不到記錄 (理論上至少 data[0] 會符合)
+                                console.warn(`節目 "${showTitle}" 在最新時間 ${latestDateString} +/- ${timeWindowMinutes} 分鐘內找不到記錄？`);
+                                // 備援：至少加入絕對最新的那筆
+                                data[0].showIndex = showIndex;
+                                allLatestEntries.push(data[0]);
+                                // 或者標記為 nodata
+                                // allLatestEntries.push({ title: showTitle, nodata: true, showIndex });
+                            }
+                        } catch (dateError) {
+                             console.error(`處理節目 "${showTitle}" 的日期 ${latestDateString} 時發生錯誤:`, dateError);
+                             allLatestEntries.push({ title: showTitle, error: true, showIndex, message: '日期處理錯誤' });
+                        }
+
+                    } else {
+                        // 找不到該節目的任何資料
+                        allLatestEntries.push({ title: showTitle, nodata: true, showIndex });
+                    }
+                } else {
+                    // Promise 本身失敗
+                    console.error(`查詢節目 "${showTitle}" 失敗:`, result.reason);
+                    allLatestEntries.push({ title: showTitle, error: true, showIndex });
+                }
+            });
+
+            // 排序結果：
+            // 1. 依照 specifiedShows 的原始順序 (showIndex)
+            // 2. 同一個節目內，按類別排序 (讓顯示更一致)
+            // 3. 同類別內，按排名排序 (確保排名正確顯示)
+            allLatestEntries.sort((a, b) => {
+                // 先按節目原始順序
+                if (a.showIndex !== b.showIndex) {
+                    return a.showIndex - b.showIndex;
+                }
+                // 處理錯誤或無資料的情況，讓它們排在一起
+                if (a.error || a.nodata) return -1;
+                if (b.error || b.nodata) return 1;
+
+                // 對於同一個節目 (相同 showIndex)，按類別字母排序
+                const categoryA = a.category || '';
+                const categoryB = b.category || '';
+                const categoryCompare = categoryA.localeCompare(categoryB);
+                if (categoryCompare !== 0) {
+                    return categoryCompare;
+                }
+
+                // 類別也相同時，按排名升序
+                const rankA = a.rank || Infinity;
+                const rankB = b.rank || Infinity;
+                return rankA - rankB;
+            });
+
+            displaySpecificRankings(allLatestEntries); // 顯示結果
+
+        } catch (error) {
+            console.error('獲取指定節目排行時發生錯誤:', error);
+            showMainTable(); // 出錯時，恢復顯示主列表
+            if (rankingErrorMessage) {
+                rankingErrorMessage.textContent = '載入指定節目排行時發生錯誤。';
+            }
+        }
+    }
+
+
+    // 顯示指定節目的最新排行表格
+    function displaySpecificRankings(rankings) {
+        const rankingContainer = document.getElementById('rankingTableContainer');
+        const rankingErrorMessage = document.getElementById('ranking-error-message'); // 現在應該能正確找到
+
+        // 確保元素存在
+        if (!rankingContainer || !rankingErrorMessage) {
+            console.error("找不到 rankingTableContainer 或 ranking-error-message 元素");
+            showMainTable(); // 出錯時恢復主列表
+            return;
+        }
+        rankingErrorMessage.textContent = ''; // 清除之前的錯誤訊息
+
+        if (!rankings || rankings.length === 0) {
+            rankingContainer.innerHTML = '<p class="text-center">沒有可顯示的指定節目排行資料。</p>';
+            // 即使沒有資料，也保持顯示指定排行區塊 (因為是使用者主動點擊的)
+            return;
+        }
+
+        // 建立表格結構 (使用與主列表相同的 div 結構)
+        let tableHTML = `
+            <div class="podcast-table mt-4">
+              <h4 class="text-center pt-3 pb-2" style="color: #fff;">指定節目最新排行 (時間窗口 +/- 10 分鐘)</h4>
+              <!-- 表頭 -->
+              <div class="podcast-header d-flex">
+                <div class="podcast-cell col-2">類別</div>
+                <div class="podcast-cell col-2">資料日期</div>
+                <div class="podcast-cell col-2">排行榜</div>
+                <div class="podcast-cell col-3">節目名稱</div>
+                <div class="podcast-cell col-3">主持人</div>
+              </div>
+              <!-- 資料列區 -->
+              <div class="podcast-body">
+        `;
+
+        // rankings 陣列現在可能包含同一個節目的多筆記錄 (不同類別)
+        rankings.forEach(podcast => {
+            tableHTML += '<div class="podcast-row d-flex">';
+            if (podcast.error) {
+                tableHTML += `
+                    <div class="podcast-cell col-2">錯誤</div>
+                    <div class="podcast-cell col-2">N/A</div>
+                    <div class="podcast-cell col-2">N/A</div>
+                    <div class="podcast-cell col-3">${podcast.title}</div>
+                    <div class="podcast-cell col-3">${podcast.message || '查詢失敗'}</div>
+                `;
+            } else if (podcast.nodata) {
+                 tableHTML += `
+                    <div class="podcast-cell col-2">無資料</div>
+                    <div class="podcast-cell col-2">N/A</div>
+                    <div class="podcast-cell col-2">N/A</div>
+                    <div class="podcast-cell col-3">${podcast.title}</div>
+                    <div class="podcast-cell col-3">未找到記錄</div>
+                `;
+            } else {
+                // 顯示正常的節目資料
+                tableHTML += `
+                    <div class="podcast-cell col-2">
+                      ${podcast.category ? `<a href="#" onclick="goToCategoryRanking('${podcast.category}')">${podcast.category}</a>` : '無資料'}
+                    </div>
+                    <div class="podcast-cell col-2">${podcast.date || '無資料'}</div>
+                    <div class="podcast-cell col-2">${podcast.rank || '無資料'}</div>
+                    <div class="podcast-cell col-3">
+                      ${podcast.title ? `<a href="#" onclick="searchPodcast('${podcast.title}')">${podcast.title}</a>` : '無資料'}
+                    </div>
+                    <div class="podcast-cell col-3">${podcast.host || '無資料'}</div>
+                `;
+            }
+            tableHTML += '</div>'; // 結束 podcast-row
+        });
+
+        tableHTML += `
+              </div> <!-- 結束 podcast-body -->
+            </div> <!-- 結束 podcast-table -->
+        `;
+
+        rankingContainer.innerHTML = tableHTML;
+        // 確保指定排行容器是可見的 (雖然 showRankingTable 已處理，多一層保險)
+        rankingContainer.style.display = 'block';
+    }
+
   </script>
 </body>
 </html>
