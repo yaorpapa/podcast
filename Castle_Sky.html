@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>天空之城 — 17鍵卡林巴（C調）練習器</title>
+<style>
+  body{font-family:Arial,"Noto Sans TC",sans-serif;margin:18px;background:#fafafa;color:#222;text-align:center;}
+  h1{margin:6px 0 12px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+  .controls button{padding:8px 12px;font-size:14px;cursor:pointer}
+  .sliders{display:flex;gap:12px;justify-content:center;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  input[type=range]{width:200px}
+  #stage{width:100%;max-width:1100px;margin:0 auto;height:340px;position:relative;background:linear-gradient(#fff,#fbfbfb);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;}
+  #kalimbaWrap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:10px}
+  .kalimba{display:flex;gap:6px;align-items:flex-end}
+  .key{width:46px;height:180px;background:#e6e6e6;border-radius:6px;border:1px solid #d0d0d0;position:relative;display:flex;align-items:flex-end;justify-content:center;box-sizing:border-box}
+  .key .label{position:absolute;bottom:6px;font-size:12px;color:#222;user-select:none}
+  .key.active{background:linear-gradient(180deg,#ffdfc9,#ffcc9a);box-shadow:0 6px 14px rgba(255,140,60,0.12)}
+  .fall{position:absolute;height:28px;background:#333;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none}
+  footer{margin-top:12px;color:#666;font-size:13px}
+  @media(max-width:900px){ .key{width:34px;height:120px} .fall{height:24px} input[type=range]{width:140px} }
+</style>
+</head>
+<body>
+<h1>天空之城 — 17鍵卡林巴（C調）練習器</h1>
+<div class="controls">
+  <button id="playBtn">播放</button>
+  <button id="pauseBtn">暫停</button>
+  <button id="restartBtn">重新開始</button>
+  <button id="slowerBtn" title="整體節拍變慢">放慢節拍</button>
+  <button id="fasterBtn" title="整體節拍變快">加快節拍</button>
+  <button id="dropSlowerBtn" title="視覺落下變慢">落下更慢</button>
+  <button id="dropFasterBtn" title="視覺落下變快">落下更快</button>
+  <button id="widerBtn">變寬 +1px</button>
+  <button id="narrowerBtn">變窄 -1px</button>
+</div>
+
+<div class="sliders">
+  <label>Tempo（>1 慢， &lt;1 快）：<input id="tempoInput" type="range" min="0.3" max="3.0" step="0.05" value="1.0"></label>
+  <label>Drop speed（px/frame）：<input id="dropInput" type="range" min="0.5" max="12" step="0.1" value="3.0"></label>
+</div>
+
+<div id="stage">
+  <div id="kalimbaWrap"><div class="kalimba" id="kalimba"></div></div>
+</div>
+
+<footer>琴鍵（左→右）：d6, b5, g5, e5, c5, a4, f4, d4, c4, e4, g4, b4, d5, f5, a5, c6, e6</footer>
+
+<script>
+/* -------------------- 基本設定 -------------------- */
+// 卡林巴鍵位（左→右）
+const keyOrder = ["d6","b5","g5","e5","c5","a4","f4","d4","c4","e4","g4","b4","d5","f5","a5","c6","e6"];
+
+/* 標準頻率表（十二平均律）*/
+const freq = {
+  "c4":261.6256,"d4":293.6648,"e4":329.6276,"f4":349.2282,"g4":391.9954,"a4":440.0,"b4":493.8833,
+  "c5":523.2511,"d5":587.3295,"e5":659.2551,"f5":698.4565,"g5":783.9909,"a5":880.0,"b5":987.7666,
+  "c6":1046.502,"d6":1174.659,"e6":1318.51,"d6":1174.659
+};
+
+/* 產生鍵 DOM */
+const kalimba = document.getElementById('kalimba');
+keyOrder.forEach(k=>{
+  const el = document.createElement('div');
+  el.className = 'key';
+  el.dataset.note = k;
+  el.innerHTML = `<div class="label">${k}</div>`;
+  kalimba.appendChild(el);
+});
+
+/* -------------------- 簡譜（token）來源 --------------------
+   以下 tokenList 是根據你最後提供的簡譜逐音整理出的序列（含 "_" 延音 與 "0" 休止）。
+   我會把 1..7 轉為 C 調音名（1=c4, 2=d4, ... ; 1·=c5 等）。
+   若你要極度精準每小節的附點/連分音，之後可再微調每個 token 的時長。
+*/
+const tokenList = [
+  "6","7","1","7","1","3","7","_","_","3","6","5","6","1","5","_","_","3","4","3","4","1","1",
+  "3","_","_","1","7","4","4","7","7","_","0","6","7","1","7","1","3","7","_","_","3","3",
+  "6","5","6","1","5","_","_","3","4","1","7","7","1","2","3","1","_","0","1","7","6","7","5",
+  "6","_","0","1","2","3","2","3","4","5","2","_","_","5","2","1","7","1","1","2","3",
+  "3","_","_","_","6","7","1","7","1","2","1","_","5","5","_","4","3","2","1","3","_","_","6","7",
+  "1","7","1","3","7","_","_","3","4","3","4","1","2","3","1","1","_"
+];
+
+/* 基本一拍時值（ms）— 以此為基準再乘以 tempo */
+const baseUnit = 420;
+
+/* 數字 -> C 調音名對應（使用 1=c4；1·=c5 由 token 表示時會轉成 "*1" 或 "1." 樣式，但我用簡化 token） */
+const numToNote = {
+  "1":"c4","2":"d4","3":"e4","4":"f4","5":"g4","6":"a4","7":"b4",
+  "*1":"c6","*4":"f6","*5":"g6" // 這些高音在某些 token 會用不到，但留作 fallback
+};
+
+/* 將 tokenList 轉成 notes 陣列 {note: 'c4', time: ms} */
+let notes = [];
+let t = 0;
+for (let i=0;i<tokenList.length;i++){
+  const tok = tokenList[i];
+  if (tok === "_") { t += baseUnit; continue; } // 延音 一拍
+  if (tok === "0") { t += baseUnit; continue; } // 休止 一拍
+  // 處理可能有前綴 "*"（本 tokenList 以裸數字為主）
+  let mapped = numToNote[tok];
+  // 若 token 是像 "4" 但 we prefer octave shift (例如 4 may need f4), numToNote covers.
+  if (mapped) {
+    notes.push({note: mapped, time: t});
+  }
+  t += baseUnit;
+}
+
+/* -------------------- WebAudio (plucked-ish sound) -------------------- */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+/* 簡單 pluck (Karplus-Strong-like 簡化)：使用 noise -> lowpass + decay */
+function playPluck(noteName, when, duration = 1.2) {
+  ensureAudio();
+  const f = freq[noteName];
+  if (!f) return;
+  // 使用兩個部分：一個 oscillator 做 body tone，再用 short noise 作 attack
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = f;
+  const gain = audioCtx.createGain();
+  const env = audioCtx.createGain();
+  // noise burst
+  const bufferSize = 0.02 * audioCtx.sampleRate;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / bufferSize);
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(0.0001, when);
+  noiseGain.gain.linearRampToValueAtTime(0.6, when + 0.005);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, when + 0.12);
+
+  // body oscillator envelope
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.linearRampToValueAtTime(0.9, when + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+
+  // filter to make it more kalimba-like
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = Math.min(4000, 2000 + f*0.5);
+
+  noise.connect(noiseGain);
+  noiseGain.connect(filter);
+  osc.connect(gain);
+  gain.connect(filter);
+  filter.connect(audioCtx.destination);
+
+  noise.start(when);
+  noise.stop(when + 0.12);
+  osc.start(when);
+  osc.stop(when + duration + 0.05);
+}
+
+/* -------------------- 播放 / 視覺引擎 -------------------- */
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const restartBtn = document.getElementById('restartBtn');
+const slowerBtn = document.getElementById('slowerBtn');
+const fasterBtn = document.getElementById('fasterBtn');
+const dropSlowerBtn = document.getElementById('dropSlowerBtn');
+const dropFasterBtn = document.getElementById('dropFasterBtn');
+const widerBtn = document.getElementById('widerBtn');
+const narrowerBtn = document.getElementById('narrowerBtn');
+const tempoInput = document.getElementById('tempoInput');
+const dropInput = document.getElementById('dropInput');
+
+let tempo = parseFloat(tempoInput.value); // multiplier: playback uses notes[i].time * tempo
+let dropSpeed = parseFloat(dropInput.value);
+let playing = false;
+let startMs = 0;
+let pausedAt = 0;
+let spawnIndex = 0;
+let visuals = [];
+
+/* spawn visual rectangle above the corresponding key */
+function spawnVisual(noteName) {
+  const keyEls = Array.from(document.querySelectorAll('.key'));
+  const keyEl = keyEls.find(k => k.dataset.note === noteName);
+  if (!keyEl) return null;
+  const stage = document.getElementById('stage');
+  const div = document.createElement('div');
+  div.className = 'fall';
+  div.textContent = noteName;
+  const w = Math.max(12, keyEl.clientWidth - 6);
+  div.style.width = w + 'px';
+  const left = keyEl.offsetLeft + (keyEl.clientWidth - w)/2 + 2;
+  div.style.left = left + 'px';
+  div.style.top = '8px';
+  stage.appendChild(div);
+  visuals.push({el:div, key:keyEl});
+  return div;
+}
+
+/* visual animation loop */
+let raf = null;
+function animate(){
+  for (let i = visuals.length -1; i>=0; i--){
+    const obj = visuals[i];
+    const el = obj.el;
+    if (!el.parentElement) { visuals.splice(i,1); continue; }
+    const cur = parseFloat(el.style.top || '0');
+    el.style.top = (cur + dropSpeed) + 'px';
+    if (!el._hit && (cur + dropSpeed) >= (obj.key.offsetTop - 20 + 120)) {
+      // highlight key when near bottom
+      el._hit = true;
+      obj.key.classList.add('active');
+      setTimeout(()=> obj.key.classList.remove('active'), 260);
+    }
+    if (cur > 300) { el.remove(); visuals.splice(i,1); }
+  }
+  raf = requestAnimationFrame(animate);
+}
+
+/* scheduler checks notes and spawns/schedules audio */
+function scheduler(now){
+  if (!playing) return;
+  const elapsed = (now - startMs);
+  while (spawnIndex < notes.length && (notes[spawnIndex].time * tempo) <= elapsed) {
+    const n = notes[spawnIndex];
+    // spawn visual
+    spawnVisual(n.note);
+    // schedule audio to play ASAP (small offset)
+    ensureAudio();
+    const when = audioCtx.currentTime + 0.02;
+    playPluck(n.note, when, 1.1);
+    spawnIndex++;
+  }
+  if (spawnIndex >= notes.length) {
+    // finished: stop when visuals clear
+    playing = false;
+    return;
+  }
+  requestAnimationFrame(scheduler);
+}
+
+/* controls */
+function startPlayback(offsetMs=0) {
+  if (playing) return;
+  ensureAudio();
+  playing = true;
+  startMs = performance.now() - offsetMs;
+  spawnIndex = notes.findIndex(n => n.time * tempo >= offsetMs);
+  if (spawnIndex < 0) spawnIndex = notes.length;
+  if (!raf) animate();
+  requestAnimationFrame(scheduler);
+}
+function pausePlayback(){
+  if (!playing) return;
+  pausedAt = (performance.now() - startMs);
+  playing = false;
+  cancelAnimationFrame(raf); raf = null;
+}
+function resetPlayback(){
+  visuals.forEach(v=>v.el.remove());
+  visuals = [];
+  spawnIndex = 0;
+  playing = false;
+  startMs = 0;
+  pausedAt = 0;
+  cancelAnimationFrame(raf); raf=null;
+}
+
+playBtn.addEventListener('click', ()=> {
+  startPlayback(pausedAt || 0);
+});
+pauseBtn.addEventListener('click', ()=> {
+  pausePlayback();
+});
+restartBtn.addEventListener('click', ()=> {
+  resetPlayback();
+  startPlayback(0);
+});
+slowerBtn.addEventListener('click', ()=> {
+  tempo = Math.min(5, tempo * 1.2);
+  tempoInput.value = tempo.toFixed(2);
+});
+fasterBtn.addEventListener('click', ()=> {
+  tempo = Math.max(0.25, tempo / 1.2);
+  tempoInput.value = tempo.toFixed(2);
+});
+dropSlowerBtn.addEventListener('click', ()=> {
+  dropSpeed = Math.max(0.5, dropSpeed - 0.5);
+  dropInput.value = dropSpeed.toFixed(1);
+});
+dropFasterBtn.addEventListener('click', ()=> {
+  dropSpeed = Math.min(12, dropSpeed + 0.5);
+  dropInput.value = dropSpeed.toFixed(1);
+});
+widerBtn.addEventListener('click', ()=> {
+  document.querySelectorAll('.key').forEach(k=>{ const cur = parseInt(window.getComputedStyle(k).width); k.style.width = (cur+1)+'px'; });
+});
+narrowerBtn.addEventListener('click', ()=> {
+  document.querySelectorAll('.key').forEach(k=>{ const cur = parseInt(window.getComputedStyle(k).width); k.style.width = Math.max(8,cur-1)+'px'; });
+});
+tempoInput.addEventListener('input', (e)=> tempo = parseFloat(e.target.value));
+dropInput.addEventListener('input', (e)=> dropSpeed = parseFloat(e.target.value));
+
+/* -------------------- notes 已生成（C調對應） --------------------
+   above tokenList 轉換後的 notes 陣列 (每個 note 使用 num->C 調對應)。
+   若你聽到某些小節音高或節拍仍需微調，我可以再逐小節修改時間或換 octave。
+*/
+console.log("載入完成。按「播放」開始。");
+</script>
+</body>
+</html>
